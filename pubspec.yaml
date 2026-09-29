@@ -1,5 +1,5 @@
 name: lion_evolution_runner
-description: "A new Flutter project."
+description: "Lion Evolution Runner - a hyper-casual lane runner."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -34,6 +34,10 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flame: ^1.38.2
+  shared_preferences: ^2.5.5
+  flutter_svg: ^2.3.0
+  flame_audio: ^2.12.2
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +60,23 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/images/characters/
+    - assets/images/bosses/
+    - assets/images/items/
+    - assets/images/effects/
+    - assets/images/track/
+    - assets/images/ui/
+    - assets/images/ui/upgrades/
+    - assets/levels/
+    - assets/audio/sfx/
+    - assets/audio/music/
+
+  fonts:
+    - family: LilitaOne
+      fonts:
+        - asset: assets/fonts/LilitaOne-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

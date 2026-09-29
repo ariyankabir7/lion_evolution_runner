@@ -12,11 +12,14 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 | Collision | Logical (lane + distance), not pixel hitboxes |
 | Boss formula | `win if HP ≥ BossPower` (the PRD's attack multiplier is dropped) |
 | State | `ValueNotifier`s + small services, no Riverpod |
-| Packages | `flame`, `flame_audio`, `shared_preferences` |
+| Packages | `flame`, `flame_audio`, `shared_preferences`, `flutter_svg` |
+| Title | **Lion Evolution Runner** (logo drawn in code: `widgets/title_logo.dart`) |
+| UI art | Drawn in code/SVG wherever possible so it re-colours per chapter: buttons, panels, icons (`ui/svg/game_icons.dart`), menu backdrop (`ui/svg/backdrop_svg.dart`, built from `ChapterPalette`). Raster art only for characters, bosses, items, effects. |
+| Asset pipeline | Raw art lives in `design/raw/`; `python3 tools/process_assets.py` keys out magenta, splits sheets, trims and writes `assets/images/`. |
 
 ## 2. Core rules
 
-- HP 0–100, shown as 5 segments (20 HP each). Runs start at **20 HP** (Starving).
+- HP 0–100, shown as 5 segments (20 HP each). Runs start at **35 HP** (Starving; one early obstacle hit leaves 5 HP instead of killing).
 - Stages: Starving 0–39 · Healthy 40–79 · Gladiator 80–100.
 - Meat **+20** (Food upgrade raises this). Broccoli **−20**. Spikes and other hard obstacles **−30**, with knockback and camera shake.
 - HP reaches 0 → the lion collapses → Defeat.
@@ -26,14 +29,17 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 
 ## 3. Economy (coins + upgrades)
 
-- **Coins** are a third pickup on the track (small, in lines). Completing a level gives a bonus of `10 + 10×stars`. Replays pay only 25% of the bonus.
-- **Upgrades** (each max Lv 10, cost = `base × 1.45^level`, rounded):
+- **Coins** are a third pickup on the track (small, in lines). Completing a level gives a bonus of `10 + 10×stars`, **doubled on boss levels**. Replays pay only 25% of the bonus. Coins collected are kept even on defeat.
+- Measured income (70% of coins picked up, 2 stars on average): ~47 coins per level early, ~75 later (levels got longer: about +15% per level, but less per minute); everything maxed around level 390.
+- **Upgrades** (each max Lv 10, cost = `base × 1.32^level`, rounded to 5). First buy after ~3-4 levels (~29k total to max everything).
 
 | Upgrade | Effect per level | Base cost |
 |---|---|---|
-| Speed | Faster lane switching (agility): 0.22s → 0.12s at Lv 10. Run speed stays set by the level. | 300 |
-| Food | Meat HP +20 → +30 (+1 per level) | 400 |
-| Shield | Lv 1–4: blocks 1 hit per run · Lv 5–9: 2 hits · Lv 10: 3 hits | 500 |
+| Speed | Faster lane switching (agility): 0.22s → 0.12s at Lv 10. Run speed stays set by the level. | 150 |
+| Food | Meat HP +20 → +30 (+1 per level) | 200 |
+| Shield | +1 blocked hit at Lv 1, 3, 5, 7, 10 (5 at max). Lv 2, 4, 6, 8, 9: longer invincibility after a block (0.5s → 1.5s). Lv 10 also bounces broccoli while the shield holds. | 250 |
+
+- Home shows a red "!" on UPGRADES whenever something is affordable; a defeat screen offers UPGRADE when affordable.
 
 ## 4. Level generation (1000 levels)
 
@@ -41,7 +47,7 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 - **Difficulty** comes from the level number `n` in two parts:
   - a slow global rise over the first ~300 levels, then a plateau;
   - a sawtooth within each chapter: every 10th level is a "boss level" (harder, bigger coin reward) and the level after it eases off.
-- **Generated from the level number:** run speed, track length (25–60s of running), spacing between items, the mix of patterns (single, zig-zag, "meat behind spikes" traps, choice rows with broccoli in one lane and meat in the other), and boss power (40 → 100, scaled so a mostly clean run always wins).
+- **Generated from the level number:** run speed, track length (average run: ~34s for 1–20, ~47s for 21–100, ~54s for 101–300, ~58s after; boss levels +6s), a run split into 3–5 themed sections (mixed, coin rush, gauntlet, feast, slalom) with short breathers between them, spacing between items, the mix of patterns (single, zig-zag, "meat behind spikes" traps, choice rows, walls of obstacles in one lane, meat feasts, broccoli slaloms, coin snakes, and coin lines that lure you into an obstacle), and boss power (40 → 100, scaled so a mostly clean run always wins).
 - **Checks:** the generator simulates a perfect run and rejects any level where the best possible HP is below the boss's power. A unit test runs all 1000 levels through this check.
 - **Level Select:** tabs per chapter plus a lazy-loaded grid of 100 levels. It auto-scrolls to the current level, and each tile shows its state (locked / current, pulsing / stars).
 
@@ -93,5 +99,8 @@ test/  evolution_stage_test  boss_resolution_test  star_rating_test
 4. **Levels:** generator, 20 hand-tuned levels, chapters, Level Select.
 5. **Economy:** coins, upgrades on Home, balancing.
 6. **Polish:** audio, particles, and swapping in new art as it arrives.
+   - Audio: 16 SFX + a 32s music loop synthesised by `tools/generate_audio.py`; `AudioService` plays them through low-latency pools and respects the Sound/Music toggles. Drop-in CC0 list in `docs/AUDIO.md`.
+   - Roadside decor per chapter (acacias, palms, cacti, pines, bamboo, columns…) drawn in code from the chapter palette; speed lines, dust trail, pickup/hit particle bursts, lane-change swoosh, shield bubble.
+   - Launcher icon (legacy + adaptive) from `design/app_icon_1024.png` via `tools/make_launcher_icon.py`.
 
 The game is built so missing art never blocks it: every new asset has a stand-in until it arrives.
