@@ -44,6 +44,22 @@ void main() {
     }
   });
 
+  test('runs are long enough: 1-20 average 30s+, 21-100 45s+, 101-300 50s+, later 55s+', () {
+    double avg(int from, int to) {
+      var sum = 0.0;
+      for (var n = from; n <= to; n++) {
+        final c = load(n);
+        sum += c.length / c.speed;
+      }
+      return sum / (to - from + 1);
+    }
+
+    expect(avg(1, 20), greaterThan(30));
+    expect(avg(21, 100), greaterThan(45));
+    expect(avg(101, 300), greaterThan(50));
+    expect(avg(301, 1000), greaterThan(55));
+  });
+
   test('all 1000 levels are well-formed and winnable with a perfect run', () {
     for (var n = 1; n <= 1000; n++) {
       final c = load(n);
