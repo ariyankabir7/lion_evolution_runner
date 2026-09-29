@@ -12,7 +12,10 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 | Collision | Logical (lane + distance), not pixel hitboxes |
 | Boss formula | `win if HP ≥ BossPower` (the PRD's attack multiplier is dropped) |
 | State | `ValueNotifier`s + small services, no Riverpod |
-| Packages | `flame`, `flame_audio`, `shared_preferences` |
+| Packages | `flame`, `flame_audio`, `shared_preferences`, `flutter_svg` |
+| Title | **Lion Evolution Runner** (logo drawn in code: `widgets/title_logo.dart`) |
+| UI art | Drawn in code/SVG wherever possible so it re-colours per chapter: buttons, panels, icons (`ui/svg/game_icons.dart`), menu backdrop (`ui/svg/backdrop_svg.dart`, built from `ChapterPalette`). Raster art only for characters, bosses, items, effects. |
+| Asset pipeline | Raw art lives in `design/raw/`; `python3 tools/process_assets.py` keys out magenta, splits sheets, trims and writes `assets/images/`. |
 
 ## 2. Core rules
 
