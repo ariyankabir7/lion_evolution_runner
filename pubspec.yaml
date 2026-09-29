@@ -68,6 +68,12 @@ flutter:
     - assets/images/track/
     - assets/images/ui/
     - assets/images/ui/upgrades/
+    - assets/levels/
+
+  fonts:
+    - family: LilitaOne
+      fonts:
+        - asset: assets/fonts/LilitaOne-Regular.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

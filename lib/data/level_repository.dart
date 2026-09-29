@@ -1,11 +1,23 @@
+import 'package:flutter/services.dart';
+
 import '../models/level_config.dart';
+import 'handcrafted_levels.dart';
 import 'level_generator.dart';
 
-/// Single entry point for level data. Milestone 4 adds the hand-tuned levels 1–20 from JSON.
+/// Single entry point for level data: hand-tuned levels from JSON first, the generator for the rest.
 class LevelRepository {
-  const LevelRepository({this.generator = const LevelGenerator()});
+  LevelRepository._(this._handcrafted);
 
-  final LevelGenerator generator;
+  static late final LevelRepository instance;
 
-  LevelConfig load(int level) => generator.generate(level);
+  static Future<void> init() async {
+    instance = LevelRepository._(HandcraftedLevels.parse(await rootBundle.loadString(HandcraftedLevels.assetPath)));
+  }
+
+  final Map<int, LevelConfig> _handcrafted;
+  final _generator = const LevelGenerator();
+  final _cache = <int, LevelConfig>{};
+
+  LevelConfig load(int level) =>
+      _handcrafted[level] ?? _cache.putIfAbsent(level, () => _generator.generate(level));
 }

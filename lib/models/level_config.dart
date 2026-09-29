@@ -20,6 +20,7 @@ class LevelConfig {
     required this.bossPower,
     required this.spawns,
     this.isBossLevel = false,
+    this.name,
   });
 
   final int level;
@@ -38,4 +39,17 @@ class LevelConfig {
 
   /// Every 10th level: harder, bigger reward.
   final bool isBossLevel;
+
+  /// Only hand-tuned levels have names.
+  final String? name;
+
+  LevelConfig withBossPower(int power) => LevelConfig(
+        level: level,
+        speed: speed,
+        length: length,
+        bossPower: power,
+        spawns: spawns,
+        isBossLevel: isBossLevel,
+        name: name,
+      );
 }

@@ -38,11 +38,11 @@ class UpgradeCard extends StatelessWidget {
                   children: [
                     Text(
                       type.title.toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.outline),
+                      style: const TextStyle(fontSize: 20, color: AppColors.outline),
                     ),
                     Text(
                       Economy.describe(type, level),
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.outlineSoft),
+                      style: const TextStyle(fontSize: 14, color: AppColors.outlineSoft),
                     ),
                     const SizedBox(height: 6),
                     _LevelPips(level: level),

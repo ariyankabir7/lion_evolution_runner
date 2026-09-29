@@ -64,7 +64,7 @@ class _ToggleRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.outline),
+                style: const TextStyle(fontSize: 24, color: AppColors.outline),
               ),
             ),
             GameButton(

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
-import '../core/constants/game_constants.dart';
 import '../models/item_type.dart';
 import '../models/level_config.dart';
+import 'level_simulator.dart';
 
 /// Builds any level 1..1000 from its number alone. The same number always gives the same level.
 ///
@@ -19,8 +19,29 @@ class LevelGenerator {
     return (0.1 + global * 0.7 + saw).clamp(0.0, 1.0);
   }
 
+  /// Levels whose best possible HP is below this are regenerated with another seed.
+  static const minBestHp = 55;
+
   LevelConfig generate(int level) {
-    final rnd = math.Random(level * 7919 + 17);
+    for (var attempt = 0;; attempt++) {
+      final c = _build(level, attempt);
+      final best = LevelSimulator.bestFinalHp(c);
+      if (best >= minBestHp || attempt >= 8) return c.withBossPower(bossPowerFor(level, best));
+    }
+  }
+
+  /// Boss power sits between 40 and the best reachable HP. Easy levels leave lots of slack;
+  /// hard ones need a nearly clean run. Rounded down to a multiple of 5 so it reads nicely.
+  static int bossPowerFor(int level, int bestHp) {
+    final d = difficulty(level);
+    final share = (0.3 + 0.55 * d + (level % 10 == 0 ? 0.1 : 0)).clamp(0.0, 0.9);
+    final raw = 40 + (bestHp - 40) * share;
+    final rounded = (raw / 5).floor() * 5;
+    return rounded.clamp(math.min(40, bestHp), bestHp);
+  }
+
+  LevelConfig _build(int level, int attempt) {
+    final rnd = math.Random(level * 7919 + 17 + attempt * 104729);
     final d = difficulty(level);
     final isBoss = level % 10 == 0;
 
@@ -96,13 +117,9 @@ class LevelGenerator {
       level: level,
       speed: speed,
       length: length,
-      bossPower: _bossPower(d, isBoss),
+      bossPower: 0, // set from the simulation in generate()
       spawns: spawns,
       isBossLevel: isBoss,
     );
   }
-
-  /// Placeholder until the Milestone 4 checker ties this to the best reachable HP.
-  static int _bossPower(double d, bool isBoss) =>
-      (40 + 50 * d + (isBoss ? 10 : 0)).round().clamp(40, GameConstants.maxHp);
 }

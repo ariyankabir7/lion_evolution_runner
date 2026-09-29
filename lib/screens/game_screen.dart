@@ -22,7 +22,7 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final LionGame _game = LionGame(
-    config: const LevelRepository().load(widget.level),
+    config: LevelRepository.instance.load(widget.level),
     chapter: ChapterCatalog.forLevel(widget.level),
   );
 
@@ -84,7 +84,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               autofocus: true,
               overlayBuilderMap: {
                 OverlayIds.hud: (_, g) => HudOverlay(game: g),
-                OverlayIds.ready: (_, _) => const ReadyOverlay(),
+                OverlayIds.ready: (_, g) => ReadyOverlay(levelName: g.config.name),
                 OverlayIds.pause: (_, g) => PauseOverlay(game: g),
                 OverlayIds.result: (_, g) => ResultOverlay(game: g),
               },

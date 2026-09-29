@@ -53,7 +53,7 @@ class ResultOverlay extends StatelessWidget {
                           ? 'Your lion ran out of strength!'
                           : 'Your HP ${r.hp}  vs  ${game.chapter.bossName} ${r.bossPower}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.outline),
+                      style: const TextStyle(fontSize: 18, color: AppColors.outline),
                     ),
                     const SizedBox(height: 12),
                     Row(

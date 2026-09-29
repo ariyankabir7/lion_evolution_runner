@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../lion_game.dart';
 import '../world/perspective.dart';
 
@@ -43,7 +44,7 @@ class BossComponent extends PositionComponent with HasGameReference<LionGame> {
           text: s,
           style: TextStyle(
             fontSize: size,
-            fontWeight: FontWeight.w900,
+            fontFamily: AppTheme.fontFamily,
             color: color,
             foreground: color == null
                 ? (Paint()

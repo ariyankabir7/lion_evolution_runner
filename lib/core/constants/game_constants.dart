@@ -7,7 +7,7 @@ abstract final class GameConstants {
   static const chapterCount = totalLevels ~/ levelsPerChapter;
 
   static const maxHp = 100;
-  static const startHp = 20;
+  static const startHp = 35;
   static const hpPerSegment = 20;
 
   static const meatHp = 20;

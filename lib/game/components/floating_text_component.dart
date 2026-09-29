@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Outlined text that rises and fades, for "+20", "-30", "EVOLVED!" and similar.
 class FloatingTextComponent extends PositionComponent {
@@ -39,7 +40,7 @@ class FloatingTextComponent extends PositionComponent {
   static TextPainter _painter(String text, double size, TextStyle style) => TextPainter(
         text: TextSpan(
           text: text,
-          style: style.copyWith(fontSize: size, fontWeight: FontWeight.w900),
+          style: style.copyWith(fontSize: size, fontFamily: AppTheme.fontFamily),
         ),
         textDirection: TextDirection.ltr,
       )..layout();

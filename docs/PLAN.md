@@ -19,7 +19,7 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 
 ## 2. Core rules
 
-- HP 0–100, shown as 5 segments (20 HP each). Runs start at **20 HP** (Starving).
+- HP 0–100, shown as 5 segments (20 HP each). Runs start at **35 HP** (Starving; one early obstacle hit leaves 5 HP instead of killing).
 - Stages: Starving 0–39 · Healthy 40–79 · Gladiator 80–100.
 - Meat **+20** (Food upgrade raises this). Broccoli **−20**. Spikes and other hard obstacles **−30**, with knockback and camera shake.
 - HP reaches 0 → the lion collapses → Defeat.

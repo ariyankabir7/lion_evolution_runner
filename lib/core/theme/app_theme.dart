@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 abstract final class AppTheme {
+  /// Lilita One (SIL OFL, assets/fonts). It has a single weight, so never ask for bold:
+  /// that would make the engine synthesise a smeared fake bold.
+  static const fontFamily = 'LilitaOne';
+
   static ThemeData build() {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.orange,
         primary: AppColors.orange,
@@ -26,7 +31,7 @@ abstract final class AppTheme {
 
   /// Chunky display text used for titles, numbers and buttons.
   static const display = TextStyle(
-    fontWeight: FontWeight.w900,
+    fontFamily: fontFamily,
     letterSpacing: 0.5,
     height: 1.05,
     color: AppColors.white,
