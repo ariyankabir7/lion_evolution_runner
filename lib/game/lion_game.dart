@@ -313,7 +313,7 @@ class LionGame extends FlameGame with KeyboardEvents {
     final replay = progress.starsFor(config.level) > 0;
     final stars = LevelResult.starsFor(won: won, hp: session.hp.value, bossPower: config.bossPower);
     final firstWin = won && progress.recordWin(config.level, stars);
-    final bonus = won ? Economy.levelBonus(stars, replay: replay) : 0;
+    final bonus = won ? Economy.levelBonus(stars, replay: replay, bossLevel: config.isBossLevel) : 0;
     result = LevelResult(
       level: config.level,
       won: won,
@@ -322,6 +322,8 @@ class LionGame extends FlameGame with KeyboardEvents {
       coinsCollected: session.coins.value,
       bonus: bonus,
       firstWin: firstWin,
+      replay: replay,
+      bossLevel: config.isBossLevel,
     );
     services.wallet.add(result!.totalCoins);
     session.state.value = won ? RunState.won : RunState.lost;

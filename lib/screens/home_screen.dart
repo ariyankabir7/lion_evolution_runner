@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../core/constants/asset_paths.dart';
 import '../core/services/services.dart';
+import '../core/theme/app_colors.dart';
 import '../data/chapter_catalog.dart';
 import '../models/evolution_stage.dart';
 import '../ui/svg/game_icons.dart';
@@ -73,11 +74,15 @@ class HomeScreen extends StatelessWidget {
                                   skin: ButtonSkin.purple,
                                   onPressed: () => Navigator.of(context).pushNamed(Routes.levels),
                                 ),
-                                _SideButton(
-                                  icon: GameIcon.arrowUp,
-                                  label: 'UPGRADES',
-                                  skin: ButtonSkin.orange,
-                                  onPressed: () => showUpgradesDialog(context),
+                                ListenableBuilder(
+                                  listenable: services.upgrades.changes,
+                                  builder: (context, _) => _SideButton(
+                                    icon: GameIcon.arrowUp,
+                                    label: 'UPGRADES',
+                                    skin: ButtonSkin.orange,
+                                    badge: services.upgrades.anyAffordable,
+                                    onPressed: () => showUpgradesDialog(context),
+                                  ),
                                 ),
                               ],
                             ),
@@ -109,19 +114,49 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _SideButton extends StatelessWidget {
-  const _SideButton({required this.icon, required this.label, required this.skin, required this.onPressed});
+  const _SideButton({
+    required this.icon,
+    required this.label,
+    required this.skin,
+    required this.onPressed,
+    this.badge = false,
+  });
 
   final GameIcon icon;
   final String label;
   final ButtonSkin skin;
   final VoidCallback onPressed;
 
+  /// Red "!" dot, e.g. when an upgrade is affordable.
+  final bool badge;
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GameButton.round(icon: icon, skin: skin, size: 72, onPressed: onPressed),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            GameButton.round(icon: icon, skin: skin, size: 72, onPressed: onPressed),
+            if (badge)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.outline, width: 3),
+                  ),
+                  child: const StrokedText('!', size: 18, drop: false),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 2),
         StrokedText(label, size: 14),
       ],

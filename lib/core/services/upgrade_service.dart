@@ -25,6 +25,11 @@ class UpgradeService {
 
   bool canBuy(UpgradeType t) => !isMaxed(t) && _wallet.coins.value >= nextCost(t);
 
+  bool get anyAffordable => UpgradeType.values.any(canBuy);
+
+  /// Fires when coins or any upgrade level change.
+  Listenable get changes => Listenable.merge([_wallet.coins, ...levels.values]);
+
   bool tryBuy(UpgradeType t) {
     if (isMaxed(t) || !_wallet.trySpend(nextCost(t))) return false;
     levels[t]!.value++;

@@ -29,14 +29,17 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 
 ## 3. Economy (coins + upgrades)
 
-- **Coins** are a third pickup on the track (small, in lines). Completing a level gives a bonus of `10 + 10×stars`. Replays pay only 25% of the bonus.
-- **Upgrades** (each max Lv 10, cost = `base × 1.45^level`, rounded):
+- **Coins** are a third pickup on the track (small, in lines). Completing a level gives a bonus of `10 + 10×stars`, **doubled on boss levels**. Replays pay only 25% of the bonus. Coins collected are kept even on defeat.
+- Measured income (70% of coins picked up, 2 stars on average): ~40 coins per level early, ~65 later; ~5k by level 100, ~31k by level 500.
+- **Upgrades** (each max Lv 10, cost = `base × 1.32^level`, rounded to 5). First buy after ~4 levels; everything maxed around level 450 (~29k total).
 
 | Upgrade | Effect per level | Base cost |
 |---|---|---|
-| Speed | Faster lane switching (agility): 0.22s → 0.12s at Lv 10. Run speed stays set by the level. | 300 |
-| Food | Meat HP +20 → +30 (+1 per level) | 400 |
-| Shield | Lv 1–4: blocks 1 hit per run · Lv 5–9: 2 hits · Lv 10: 3 hits | 500 |
+| Speed | Faster lane switching (agility): 0.22s → 0.12s at Lv 10. Run speed stays set by the level. | 150 |
+| Food | Meat HP +20 → +30 (+1 per level) | 200 |
+| Shield | Lv 1–4: blocks 1 hit per run · Lv 5–9: 2 hits · Lv 10: 3 hits | 250 |
+
+- Home shows a red "!" on UPGRADES whenever something is affordable; a defeat screen offers UPGRADE when affordable.
 
 ## 4. Level generation (1000 levels)
 

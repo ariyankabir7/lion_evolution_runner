@@ -9,6 +9,8 @@ class LevelResult {
     required this.coinsCollected,
     required this.bonus,
     required this.firstWin,
+    this.replay = false,
+    this.bossLevel = false,
   });
 
   final int level;
@@ -18,6 +20,10 @@ class LevelResult {
   final int coinsCollected;
   final int bonus;
   final bool firstWin;
+
+  /// The level had been won before, so the bonus is reduced.
+  final bool replay;
+  final bool bossLevel;
 
   int get stars => starsFor(won: won, hp: hp, bossPower: bossPower);
   int get totalCoins => coinsCollected + bonus;

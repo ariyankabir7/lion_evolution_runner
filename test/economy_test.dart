@@ -3,10 +3,26 @@ import 'package:lion_evolution_runner/core/constants/economy.dart';
 import 'package:lion_evolution_runner/models/upgrade_type.dart';
 
 void main() {
-  test('upgrade cost grows by 1.45x per level', () {
-    expect(Economy.upgradeCost(UpgradeType.speed, 0), 300);
-    expect(Economy.upgradeCost(UpgradeType.speed, 1), 435);
-    expect(Economy.upgradeCost(UpgradeType.shield, 0), 500);
+  test('upgrade cost grows by 1.32x per level, rounded to 5', () {
+    expect(Economy.upgradeCost(UpgradeType.speed, 0), 150);
+    expect(Economy.upgradeCost(UpgradeType.speed, 1), 200);
+    expect(Economy.upgradeCost(UpgradeType.shield, 0), 250);
+    for (final t in UpgradeType.values) {
+      for (var l = 0; l < 10; l++) {
+        expect(Economy.upgradeCost(t, l) % 5, 0);
+        if (l > 0) expect(Economy.upgradeCost(t, l), greaterThan(Economy.upgradeCost(t, l - 1)));
+      }
+    }
+  });
+
+  test('maxing everything costs about 450 levels of income', () {
+    var total = 0;
+    for (final t in UpgradeType.values) {
+      for (var l = 0; l < 10; l++) {
+        total += Economy.upgradeCost(t, l);
+      }
+    }
+    expect(total, inInclusiveRange(25000, 32000));
   });
 
   test('lane switch goes from 0.22s to 0.12s', () {
@@ -23,5 +39,6 @@ void main() {
   test('level bonus and replay factor', () {
     expect(Economy.levelBonus(3, replay: false), 40);
     expect(Economy.levelBonus(3, replay: true), 10);
+    expect(Economy.levelBonus(1, replay: false, bossLevel: true), 40);
   });
 }

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../../app.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../core/constants/game_constants.dart';
+import '../../core/services/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/evolution_stage.dart';
+import '../../models/level_result.dart';
 import '../../ui/svg/game_icons.dart';
+import '../../widgets/dialogs.dart';
 import '../../widgets/game_button.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/stroked_text.dart';
@@ -56,15 +59,18 @@ class ResultOverlay extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, color: AppColors.outline),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(AssetPaths.full(AssetPaths.coin), height: 40),
-                        const SizedBox(width: 6),
-                        StrokedText('+${r.totalCoins}', size: 34, color: AppColors.gold),
-                      ],
-                    ),
+                    _CoinBreakdown(result: r),
                     const SizedBox(height: 18),
+                    if (!r.won && services.upgrades.anyAffordable) ...[
+                      GameButton(
+                        label: 'UPGRADE',
+                        icon: GameIcon.arrowUp,
+                        skin: ButtonSkin.orange,
+                        width: double.infinity,
+                        onPressed: () => showUpgradesDialog(context),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     if (r.won && r.level < GameConstants.totalLevels) ...[
                       GameButton(
                         label: 'NEXT',
@@ -109,6 +115,59 @@ String _portrait(bool won, int hp) {
   if (!won) return AssetPaths.lionDefeated;
   final stage = EvolutionStage.fromHp(hp);
   return stage == EvolutionStage.gladiator ? AssetPaths.lionVictory : stage.frontSprite;
+}
+
+class _CoinBreakdown extends StatelessWidget {
+  const _CoinBreakdown({required this.result});
+
+  final LevelResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = result;
+    final bonusNote = !r.won
+        ? ''
+        : r.replay
+            ? ' (replay)'
+            : r.bossLevel
+                ? ' (boss x2)'
+                : '';
+    const label = TextStyle(fontSize: 16, color: AppColors.outlineSoft);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.outline.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Row(children: [
+            const Expanded(child: Text('Coins collected', style: label)),
+            Text('+${r.coinsCollected}', style: label),
+          ]),
+          if (r.won)
+            Row(children: [
+              Expanded(child: Text('Level bonus$bonusNote', style: label)),
+              Text('+${r.bonus}', style: label),
+            ]),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(AssetPaths.full(AssetPaths.coin), height: 40),
+              const SizedBox(width: 6),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: r.totalCoins.toDouble()),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, _) => StrokedText('+${v.round()}', size: 34, color: AppColors.gold),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Stars extends StatelessWidget {
