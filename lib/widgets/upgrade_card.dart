@@ -31,6 +31,7 @@ class _UpgradeCardState extends State<UpgradeCard> with SingleTickerProviderStat
   void _buy() {
     if (!services.upgrades.tryBuy(widget.type)) return;
     if (services.settings.haptics.value) HapticFeedback.mediumImpact();
+    services.audio.play(Sfx.buy);
     _pop.forward(from: 0);
   }
 

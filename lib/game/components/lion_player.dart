@@ -56,6 +56,10 @@ class LionPlayer extends PositionComponent with HasGameReference<LionGame> {
 
   final _paint = Paint()..filterQuality = FilterQuality.medium;
   static final _shadow = Paint()..color = const Color(0x55000000);
+  final _bubble = Paint();
+  final _bubbleRim = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 6;
   static final _hurtFilter = ColorFilter.mode(const Color(0xFFFF3B30).withValues(alpha: 0.6), BlendMode.srcATop);
 
   bool get isSwitching => _switchT < 1;
@@ -63,10 +67,17 @@ class LionPlayer extends PositionComponent with HasGameReference<LionGame> {
   /// Lane the lion counts as being in for collisions.
   int get collisionLane => laneX < 0 ? 0 : 1;
 
-  void moveTo(int newLane) {
-    if (_locked || pose != LionPose.run || newLane == lane) return;
+  /// Seconds of shield invincibility left; drives the bubble. Set by the game.
+  double shieldGlow = 0;
+
+  bool get isRunningPose => pose == LionPose.run;
+
+  /// Returns false when the move was ignored.
+  bool moveTo(int newLane) {
+    if (_locked || pose != LionPose.run || newLane == lane) return false;
     lane = newLane;
     _slideTo(Perspective.laneToX(newLane));
+    return true;
   }
 
   /// Finish line: glide to the road centre and ignore further input.
@@ -156,6 +167,23 @@ class LionPlayer extends PositionComponent with HasGameReference<LionGame> {
     canvas.save();
     canvas.translate(0, bob);
     _sprite.render(canvas, size: size, overridePaint: _paint);
+    if (shieldGlow > 0) _renderBubble(canvas);
     canvas.restore();
+  }
+
+  /// Blue bubble while the shield's invincibility lasts; flickers in the last 0.3s.
+  void _renderBubble(Canvas canvas) {
+    if (shieldGlow < 0.3 && (shieldGlow * 20).floor().isEven) return;
+    final r = size.y * 0.55 * (1 + 0.03 * math.sin(_poseT * 18 + shieldGlow * 10));
+    final c = Offset(size.x / 2, size.y * 0.52);
+    _bubble.shader = Gradient.radial(c, r, [
+      const Color(0x002E9BFF),
+      const Color(0x332E9BFF),
+      const Color(0x888FD3FF),
+    ], [0, 0.75, 1]);
+    _bubbleRim.color = const Color(0xCCFFFFFF);
+    canvas
+      ..drawCircle(c, r, _bubble)
+      ..drawArc(Rect.fromCircle(center: c, radius: r * 0.9), -2.6, 0.9, false, _bubbleRim);
   }
 }

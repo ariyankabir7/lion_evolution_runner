@@ -28,11 +28,15 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
   late Chapter _chapter = ChapterCatalog.forLevel(services.progress.unlockedLevel.value);
   final _grid = ScrollController();
   final _tabs = ScrollController();
+  final _tabKeys = [for (final _ in ChapterCatalog.all) GlobalKey()];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent(animate: false));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToCurrent(animate: false);
+      _revealTab(animate: false);
+    });
   }
 
   @override
@@ -44,7 +48,32 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   void _selectChapter(Chapter c) {
     setState(() => _chapter = c);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToCurrent();
+      _revealTab();
+    });
+  }
+
+  /// Keeps the selected chapter tab (which widens when selected) fully on screen, centred when possible.
+  /// Without this, later chapters opened from saved progress sat off the right edge of the tab strip.
+  void _revealTab({bool animate = true}) {
+    final ctx = _tabKeys[_chapter.index].currentContext;
+    if (ctx == null) {
+      // Not built yet (lazily off screen): jump near it, then retry once it exists.
+      if (_tabs.hasClients) {
+        _tabs.jumpTo((_chapter.index * 56.0).clamp(0.0, _tabs.position.maxScrollExtent));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_tabKeys[_chapter.index].currentContext != null) _revealTab(animate: animate);
+        });
+      }
+      return;
+    }
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: 0.5,
+      duration: animate ? const Duration(milliseconds: 300) : Duration.zero,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   /// Scrolls the grid so the current level's row sits about a third of the way down.
@@ -55,8 +84,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     final width = MediaQuery.sizeOf(context).width - _pad * 2;
     final tile = (width - _spacing * (_columns - 1)) / _columns;
     final rowH = tile + _spacing;
-    final target = ((index ~/ _columns) * rowH - _grid.position.viewportDimension / 3)
-        .clamp(0.0, _grid.position.maxScrollExtent);
+    final target = ((index ~/ _columns) * rowH - _grid.position.viewportDimension / 3).clamp(
+      0.0,
+      _grid.position.maxScrollExtent,
+    );
     if (animate) {
       _grid.animateTo(target, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
     } else {
@@ -97,21 +128,30 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 52,
-                    child: ListView.separated(
-                      controller: _tabs,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: _pad),
-                      itemCount: ChapterCatalog.all.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (_, i) {
-                        final c = ChapterCatalog.all[i];
-                        return _ChapterTab(
-                          chapter: c,
-                          selected: c == _chapter,
-                          locked: c.firstLevel > unlocked,
-                          onTap: () => _selectChapter(c),
-                        );
-                      },
+                    // Soft fade at both ends hints that the strip scrolls sideways.
+                    child: ShaderMask(
+                      blendMode: BlendMode.dstIn,
+                      shaderCallback: (r) => const LinearGradient(
+                        colors: [Color(0x00000000), Color(0xFF000000), Color(0xFF000000), Color(0x00000000)],
+                        stops: [0, 0.05, 0.95, 1],
+                      ).createShader(r),
+                      child: ListView.separated(
+                        controller: _tabs,
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: _pad),
+                        itemCount: ChapterCatalog.all.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          final c = ChapterCatalog.all[i];
+                          return _ChapterTab(
+                            key: _tabKeys[i],
+                            chapter: c,
+                            selected: c == _chapter,
+                            locked: c.firstLevel > unlocked,
+                            onTap: () => _selectChapter(c),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -164,26 +204,32 @@ class _StarTotal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: AppColors.outline.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.outline, width: 3),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const GameSvgIcon(GameIcon.star, size: 26, color: AppColors.gold, shadow: false),
-            const SizedBox(width: 4),
-            StrokedText('$stars', size: 20, color: AppColors.gold, drop: false),
-          ],
-        ),
-      );
+    height: 44,
+    padding: const EdgeInsets.symmetric(horizontal: 10),
+    decoration: BoxDecoration(
+      color: AppColors.outline.withValues(alpha: 0.7),
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: AppColors.outline, width: 3),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const GameSvgIcon(GameIcon.star, size: 26, color: AppColors.gold, shadow: false),
+        const SizedBox(width: 4),
+        StrokedText('$stars', size: 20, color: AppColors.gold, drop: false),
+      ],
+    ),
+  );
 }
 
 class _ChapterTab extends StatelessWidget {
-  const _ChapterTab({required this.chapter, required this.selected, required this.locked, required this.onTap});
+  const _ChapterTab({
+    super.key,
+    required this.chapter,
+    required this.selected,
+    required this.locked,
+    required this.onTap,
+  });
 
   final Chapter chapter;
   final bool selected;
@@ -205,10 +251,7 @@ class _ChapterTab extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (locked) ...[
-              const GameSvgIcon(GameIcon.lock, size: 18, shadow: false),
-              const SizedBox(width: 6),
-            ],
+            if (locked) ...[const GameSvgIcon(GameIcon.lock, size: 18, shadow: false), const SizedBox(width: 6)],
             if (selected)
               StrokedText('${chapter.number}. ${chapter.name.toUpperCase()}', size: 18, drop: false)
             else
@@ -245,11 +288,7 @@ class _ChapterHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 76,
-            height: 76,
-            child: Image.asset(AssetPaths.full(chapter.bossSprite), fit: BoxFit.contain),
-          ),
+          SizedBox(width: 76, height: 76, child: Image.asset(AssetPaths.full(chapter.bossSprite), fit: BoxFit.contain)),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -259,10 +298,7 @@ class _ChapterHeader extends StatelessWidget {
                   'Levels ${chapter.firstLevel}-${chapter.lastLevel}',
                   style: const TextStyle(fontSize: 14, color: AppColors.outlineSoft),
                 ),
-                Text(
-                  'Boss: ${chapter.bossName}',
-                  style: const TextStyle(fontSize: 20, color: AppColors.outline),
-                ),
+                Text('Boss: ${chapter.bossName}', style: const TextStyle(fontSize: 20, color: AppColors.outline)),
                 const SizedBox(height: 4),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),

@@ -28,26 +28,40 @@ abstract final class Economy {
   static int meatHp(int foodLevel) =>
       GameConstants.meatHp + foodLevel.clamp(0, UpgradeType.maxLevel);
 
-  static int shieldCharges(int shieldLevel) {
+  /// Shield levels that add one blocked hit each (Lv 10 blocks 5). The levels in between make the
+  /// invincibility after a block last longer, so every purchase improves something.
+  static const shieldHitLevels = [1, 3, 5, 7, 10];
+
+  static int shieldCharges(int shieldLevel) => shieldHitLevels.where((l) => l <= shieldLevel).length;
+
+  /// Seconds of invincibility after the shield blocks a hit: 0.5s, +0.2s for each in-between level
+  /// owned (Lv 2, 4, 6, 8, 9), up to 1.5s.
+  static double shieldGraceSeconds(int shieldLevel) {
     if (shieldLevel <= 0) return 0;
-    if (shieldLevel < 5) return 1;
-    if (shieldLevel < 10) return 2;
-    return 3;
+    final between = List.generate(shieldLevel.clamp(0, UpgradeType.maxLevel), (i) => i + 1)
+        .where((l) => !shieldHitLevels.contains(l))
+        .length;
+    return 0.5 + 0.2 * between;
   }
+
+  /// Capstone: at max level broccoli also bounces off while the shield holds.
+  static bool shieldBlocksBroccoli(int shieldLevel) => shieldLevel >= UpgradeType.maxLevel;
 
   /// "0.22s → 0.21s"-style preview of the next purchase, or just the current value when maxed.
   static String describeNext(UpgradeType type, int level) {
     if (level >= UpgradeType.maxLevel) return describe(type, level);
     if (type == UpgradeType.shield) {
-      // Shield charges only step up at Lv 1, 5 and 10, so show the next milestone instead.
-      final now = shieldCharges(level);
-      final nextLevel = List.generate(UpgradeType.maxLevel, (i) => i + 1).firstWhere((l) => shieldCharges(l) > now);
-      final nextHits = shieldCharges(nextLevel);
-      final label = '$nextHits hit${nextHits > 1 ? 's' : ''}';
-      return now == 0 ? '→ $label' : '$now · $label at Lv $nextLevel';
+      // Each level adds either a hit or longer invincibility after a block; say which.
+      final now = shieldCharges(level), next = shieldCharges(level + 1);
+      if (level == 0) return '→ blocks 1 hit';
+      if (shieldBlocksBroccoli(level + 1)) return '$now → $next hits + broccoli-proof';
+      if (next > now) return '$now → $next hits';
+      return 'Guard ${_grace(level)} → ${_grace(level + 1)}';
     }
     return '${_value(type, level)} → ${_value(type, level + 1)}';
   }
+
+  static String _grace(int level) => '${shieldGraceSeconds(level).toStringAsFixed(1)}s';
 
   static String _value(UpgradeType type, int level) => switch (type) {
         UpgradeType.speed => '${laneSwitchSeconds(level).toStringAsFixed(2)}s',
@@ -58,6 +72,9 @@ abstract final class Economy {
   static String describe(UpgradeType type, int level) => switch (type) {
         UpgradeType.speed => '${laneSwitchSeconds(level).toStringAsFixed(2)}s dodge',
         UpgradeType.food => '+${meatHp(level)} HP meat',
-        UpgradeType.shield => level == 0 ? 'No shield' : 'Blocks ${shieldCharges(level)} hit${shieldCharges(level) > 1 ? 's' : ''}',
+        UpgradeType.shield => level == 0
+            ? 'No shield'
+            : '${shieldCharges(level)} hit${shieldCharges(level) > 1 ? 's' : ''} · ${_grace(level)} guard'
+                '${shieldBlocksBroccoli(level) ? ' · broccoli-proof' : ''}',
       };
 }

@@ -13,8 +13,9 @@ class BurstEffect extends PositionComponent with HasGameReference<LionGame> {
     this.endSize = 260,
     this.duration = 0.45,
     this.spin = 0,
+    bool flipX = false,
     super.priority = 25000,
-  }) : super(position: position, anchor: Anchor.center);
+  }) : super(position: position, anchor: Anchor.center, scale: Vector2(flipX ? -1 : 1, 1));
 
   final String spritePath;
   final double startSize;

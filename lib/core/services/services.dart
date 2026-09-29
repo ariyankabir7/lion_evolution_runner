@@ -1,5 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'audio_service.dart';
+
+export 'audio_service.dart' show Sfx;
 import 'progress_service.dart';
 import 'settings_service.dart';
 import 'upgrade_service.dart';
@@ -12,6 +15,7 @@ class Services {
         wallet = WalletService(prefs),
         settings = SettingsService(prefs) {
     upgrades = UpgradeService(prefs, wallet);
+    audio = AudioService(settings);
   }
 
   static late final Services instance;
@@ -24,6 +28,7 @@ class Services {
   final WalletService wallet;
   final SettingsService settings;
   late final UpgradeService upgrades;
+  late final AudioService audio;
 }
 
 Services get services => Services.instance;

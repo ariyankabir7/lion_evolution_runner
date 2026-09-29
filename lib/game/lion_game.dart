@@ -23,9 +23,11 @@ import 'components/floating_text_component.dart';
 import 'components/item_component.dart';
 import 'components/lion_player.dart';
 import 'effects/burst_effect.dart';
+import 'effects/particles.dart';
 import 'game_session.dart';
 import 'overlays/overlay_ids.dart';
 import 'world/perspective.dart';
+import 'world/roadside_decor.dart';
 import 'world/track_component.dart';
 
 class LionGame extends FlameGame with KeyboardEvents {
@@ -64,6 +66,9 @@ class LionGame extends FlameGame with KeyboardEvents {
 
   int _nextSpawn = 0;
   double _shake = 0;
+
+  /// >0 while the lion is invincible after a shield block.
+  double _graceT = 0;
   LevelResult? result;
 
   @override
@@ -82,11 +87,15 @@ class LionGame extends FlameGame with KeyboardEvents {
       AssetPaths.dustCloud,
       AssetPaths.confetti,
       AssetPaths.lionVictory,
+      AssetPaths.speedSwoosh,
       chapter.bossSprite,
     ]);
     camera.viewfinder.anchor = Anchor.topLeft;
     world.addAll([
       TrackComponent(),
+      RoadsideDecor(),
+      DustTrail(),
+      SpeedLines(),
       FinishGateComponent(config.length),
       boss = BossComponent(
         worldZ: config.length + bossGap,
@@ -111,8 +120,14 @@ class LionGame extends FlameGame with KeyboardEvents {
 
   void moveLane(int lane) {
     if (session.state.value == RunState.ready) start();
-    if (!session.isPlaying) return;
-    player.moveTo(lane);
+    if (!session.isPlaying || lane == player.lane) return;
+    if (!player.moveTo(lane)) return;
+    services.audio.play(Sfx.swoosh);
+    // Wind swoosh trailing on the side the lion is leaving.
+    final dir = lane == 0 ? -1.0 : 1.0;
+    world.add(BurstEffect(AssetPaths.speedSwoosh,
+        position: player.position + Vector2(-dir * 110, -150),
+        startSize: 150, endSize: 230, duration: 0.3, flipX: dir < 0, priority: player.priority - 1));
   }
 
   void moveBy(int dir) => moveLane((player.lane + dir).clamp(0, 1));
@@ -142,12 +157,14 @@ class LionGame extends FlameGame with KeyboardEvents {
     if (!session.isPlaying) return;
     session.state.value = RunState.paused;
     pauseEngine();
+    services.audio.duckMusic(true);
     overlays.add(OverlayIds.pause);
   }
 
   void resume() {
     if (session.state.value != RunState.paused) return;
     overlays.remove(OverlayIds.pause);
+    services.audio.duckMusic(false);
     session.state.value = RunState.running;
     resumeEngine();
   }
@@ -156,6 +173,10 @@ class LionGame extends FlameGame with KeyboardEvents {
   void update(double dt) {
     dt = math.min(dt, 1 / 20); // avoid tunnelling through items after a frame hitch
     time += dt;
+    if (_graceT > 0) {
+      _graceT = math.max(0, _graceT - dt);
+      player.shieldGlow = _graceT;
+    }
     _spawnAhead(); // also while waiting to start, so the road ahead is already populated
     if (session.isPlaying) {
       speedFactor = math.min(1, speedFactor + dt * 1.2);
@@ -195,33 +216,57 @@ class LionGame extends FlameGame with KeyboardEvents {
       case ItemKind.food:
         item.collect();
         _floatText('+${session.meatHp}', AppColors.hpGladiator, at);
-        world.add(BurstEffect(AssetPaths.sparkle, position: at, startSize: 80, endSize: 220));
+        world
+          ..add(BurstEffect(AssetPaths.sparkle, position: at, startSize: 80, endSize: 220))
+          ..add(ParticleBurst(at: at, colors: _meatBits, count: 12, size: 16, squares: true));
+        services.audio.play(Sfx.meat);
         _applyHp(session.meatHp);
       case ItemKind.junk:
+        if (session.shieldBlocksBroccoli && (session.shield.value > 0 || _graceT > 0)) {
+          // Shield Lv 10: broccoli bounces off without using a charge.
+          item.removeFromParent();
+          _deflect(at, 'NO THANKS!');
+          return;
+        }
         item.collect();
         _floatText('${item.type.hpDelta}', AppColors.orange, at);
-        world.add(ScreenFlash(const Color(0xFF7BC043), peak: 0.18));
+        world
+          ..add(ScreenFlash(const Color(0xFF7BC043), peak: 0.18))
+          ..add(ParticleBurst(at: at, colors: _leafBits, count: 12, size: 15, squares: true));
+        services.audio.play(Sfx.broccoli);
         _haptic(HapticFeedback.lightImpact);
         _applyHp(item.type.hpDelta);
       case ItemKind.coin:
         item.collect();
         session.coins.value++;
-        world.add(BurstEffect(AssetPaths.sparkle, position: at, startSize: 40, endSize: 110, duration: 0.3));
+        world
+          ..add(BurstEffect(AssetPaths.sparkle, position: at, startSize: 40, endSize: 110, duration: 0.3))
+          ..add(ParticleBurst(at: at, colors: _coinBits, count: 7, size: 9, speed: 380, life: 0.4));
+        services.audio.play(Sfx.coin);
       case ItemKind.obstacle:
         item.removeFromParent();
+        if (_graceT > 0) {
+          _deflect(at, 'SAFE!');
+          return;
+        }
         if (session.consumeShield()) {
+          _graceT = session.shieldGraceSeconds;
           world
             ..add(BurstEffect(AssetPaths.upgradeShield, position: player.position - Vector2(0, 140),
                 startSize: 180, endSize: 300, duration: 0.5))
-            ..add(BurstEffect(AssetPaths.burst, position: at, startSize: 120, endSize: 280));
+            ..add(BurstEffect(AssetPaths.burst, position: at, startSize: 120, endSize: 280))
+            ..add(ParticleBurst(at: at, colors: _shieldBits, count: 16, size: 14, squares: true));
           _floatText('BLOCKED!', AppColors.blue, at, size: 52);
+          services.audio.play(Sfx.shieldBlock);
           _shake = 0.15;
           _haptic(HapticFeedback.mediumImpact);
           return;
         }
         world
           ..add(BurstEffect(AssetPaths.explosion, position: at, startSize: 140, endSize: 320))
+          ..add(ParticleBurst(at: at, colors: _debrisBits, count: 18, size: 18, speed: 650, squares: true))
           ..add(ScreenFlash(AppColors.red));
+        services.audio.play(Sfx.hit);
         _floatText('${item.type.hpDelta}', AppColors.red, at);
         player.hurt();
         speedFactor = 0.35;
@@ -231,6 +276,20 @@ class LionGame extends FlameGame with KeyboardEvents {
     }
   }
 
+  static const _meatBits = [Color(0xFFE8503A), Color(0xFFFF8A65), Color(0xFFFFF4DC)];
+  static const _leafBits = [Color(0xFF4E8F2A), Color(0xFF7BC043), Color(0xFFB5E36B)];
+  static const _coinBits = [AppColors.gold, Color(0xFFFFF3A0), AppColors.white];
+  static const _shieldBits = [AppColors.blue, Color(0xFF8FD3FF), AppColors.white];
+  static const _debrisBits = [Color(0xFF8B5A2B), Color(0xFF6E6A66), Color(0xFFB9B2A6), Color(0xFFD9C29A)];
+
+  /// Something bounced off the shield bubble without costing a charge.
+  void _deflect(Vector2 at, String text) {
+    world.add(ParticleBurst(at: at, colors: _shieldBits, count: 10, size: 12, squares: true));
+    _floatText(text, AppColors.blue, at, size: 44);
+    services.audio.play(Sfx.shieldGraze);
+    _haptic(HapticFeedback.selectionClick);
+  }
+
   void _applyHp(int delta) {
     final before = player.stage;
     final after = session.changeHp(delta);
@@ -238,12 +297,17 @@ class LionGame extends FlameGame with KeyboardEvents {
       player.setStage(after);
       final at = player.position - Vector2(0, 320);
       if (after.index > before.index) {
+        services.audio.play(Sfx.evolve);
+        world.add(ParticleBurst(at: player.position - Vector2(0, 160),
+            colors: const [AppColors.gold, Color(0xFFFFF3A0), AppColors.orange, AppColors.white],
+            count: 26, size: 16, speed: 700, life: 0.9, squares: true));
         _floatText('${after.label.toUpperCase()}!', AppColors.gold, at, size: 64, duration: 1.2);
         world
           ..add(ScreenFlash(AppColors.gold, peak: 0.4, duration: 0.5))
           ..add(BurstEffect(AssetPaths.burst, position: player.position - Vector2(0, 130),
               startSize: 200, endSize: 520, duration: 0.6, spin: 2, priority: player.priority - 1));
       } else {
+        services.audio.play(Sfx.devolve);
         _floatText(after.label.toUpperCase(), AppColors.grey, at, size: 48, duration: 1.0);
       }
     }
@@ -253,6 +317,7 @@ class LionGame extends FlameGame with KeyboardEvents {
   void _die() {
     session.state.value = RunState.finishing;
     player.collapse();
+    services.audio.play(Sfx.defeat);
     _shake = 0.4;
     add(TimerComponent(period: 1.4, removeOnFinish: true, onTick: () => _endRun(won: false)));
   }
@@ -264,6 +329,7 @@ class LionGame extends FlameGame with KeyboardEvents {
     _phase = _EndPhase.approach;
     speedFactor = 1;
     player.lockToCenter();
+    services.audio.play(Sfx.finish);
     _floatText('FINISH!', AppColors.gold, Vector2(Perspective.centerX, perspective.height * 0.45), size: 72);
   }
 
@@ -277,6 +343,7 @@ class LionGame extends FlameGame with KeyboardEvents {
       duration: GameConstants.fightSeconds,
       onDone: _resolveFight,
     ));
+    services.audio.play(Sfx.fight);
     _haptic(HapticFeedback.heavyImpact);
   }
 
@@ -288,6 +355,7 @@ class LionGame extends FlameGame with KeyboardEvents {
       boss.setPose(BossPose.defeated);
       player.setPose(LionPose.celebrate);
       _floatText('VICTORY!', AppColors.gold, textAt, size: 84, duration: 1.4);
+      services.audio.play(Sfx.victory);
       world.add(ScreenFlash(AppColors.gold, peak: 0.35, duration: 0.5));
       for (var i = 0; i < 6; i++) {
         final at = Vector2(80 + _rnd.nextDouble() * 560, perspective.height * (0.25 + _rnd.nextDouble() * 0.35));
@@ -302,6 +370,7 @@ class LionGame extends FlameGame with KeyboardEvents {
       boss.setPose(BossPose.taunt);
       player.collapse();
       _floatText('DEFEATED', AppColors.red, textAt, size: 72, duration: 1.4);
+      services.audio.play(Sfx.defeat);
       shake(0.3);
     }
     _haptic(won ? HapticFeedback.mediumImpact : HapticFeedback.heavyImpact);
@@ -353,6 +422,7 @@ class LionGame extends FlameGame with KeyboardEvents {
 
   @override
   void onRemove() {
+    services.audio.duckMusic(false);
     session.dispose();
     super.onRemove();
   }

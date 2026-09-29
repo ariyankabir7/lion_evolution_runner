@@ -77,6 +77,7 @@ class _GameButtonState extends State<GameButton> {
   void _tap() {
     if (!_enabled) return;
     if (services.settings.haptics.value) HapticFeedback.lightImpact();
+    services.audio.play(Sfx.tap);
     widget.onPressed!();
   }
 

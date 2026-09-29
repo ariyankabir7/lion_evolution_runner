@@ -68,10 +68,12 @@ class HudOverlay extends StatelessWidget {
                       ? const SizedBox.shrink()
                       : Padding(
                           padding: const EdgeInsets.only(left: 8, top: 20),
+                          // One icon plus a count: up to 5 charges would not fit beside the HP bar.
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              for (var i = 0; i < n; i++)
-                                Image.asset(AssetPaths.full(AssetPaths.upgradeShield), height: 32),
+                              Image.asset(AssetPaths.full(AssetPaths.upgradeShield), height: 34),
+                              StrokedText('×$n', size: 20, color: AppColors.white, drop: false),
                             ],
                           ),
                         ),

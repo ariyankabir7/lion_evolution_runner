@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,5 +12,6 @@ Future<void> main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await Future.wait([Services.init(), LevelRepository.init()]);
+  unawaited(services.audio.init()); // loads in the background; SFX are silent until ready
   runApp(const LionApp());
 }

@@ -30,10 +30,24 @@ void main() {
     expect(Economy.laneSwitchSeconds(10), closeTo(0.12, 1e-9));
   });
 
-  test('meat HP and shield charges', () {
+  test('meat HP', () {
     expect(Economy.meatHp(0), 20);
     expect(Economy.meatHp(10), 30);
-    expect([0, 1, 4, 5, 9, 10].map(Economy.shieldCharges), [0, 1, 1, 2, 2, 3]);
+  });
+
+  test('shield: +1 hit at Lv 1/3/5/7/10, longer guard on the levels between', () {
+    expect(List.generate(11, Economy.shieldCharges), [0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5]);
+    expect(Economy.shieldGraceSeconds(0), 0);
+    expect(Economy.shieldGraceSeconds(1), closeTo(0.5, 1e-9));
+    expect(Economy.shieldGraceSeconds(10), closeTo(1.5, 1e-9));
+    for (var l = 1; l <= UpgradeType.maxLevel; l++) {
+      final moreHits = Economy.shieldCharges(l) > Economy.shieldCharges(l - 1);
+      final longerGuard = Economy.shieldGraceSeconds(l) > Economy.shieldGraceSeconds(l - 1) + 1e-9;
+      expect(moreHits || longerGuard, isTrue, reason: 'Lv $l must improve something');
+      expect(Economy.describeNext(UpgradeType.shield, l - 1), isNotEmpty);
+    }
+    expect(Economy.shieldBlocksBroccoli(9), isFalse);
+    expect(Economy.shieldBlocksBroccoli(10), isTrue);
   });
 
   test('level bonus and replay factor', () {

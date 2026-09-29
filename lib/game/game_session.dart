@@ -14,11 +14,19 @@ class GameSession {
   GameSession(this.config)
       : meatHp = Economy.meatHp(services.upgrades.level(UpgradeType.food)),
         laneSwitchSeconds = Economy.laneSwitchSeconds(services.upgrades.level(UpgradeType.speed)),
-        shield = ValueNotifier(Economy.shieldCharges(services.upgrades.level(UpgradeType.shield)));
+        shield = ValueNotifier(Economy.shieldCharges(services.upgrades.level(UpgradeType.shield))),
+        shieldGraceSeconds = Economy.shieldGraceSeconds(services.upgrades.level(UpgradeType.shield)),
+        shieldBlocksBroccoli = Economy.shieldBlocksBroccoli(services.upgrades.level(UpgradeType.shield));
 
   final LevelConfig config;
   final int meatHp;
   final double laneSwitchSeconds;
+
+  /// Invincibility after the shield blocks a hit.
+  final double shieldGraceSeconds;
+
+  /// Shield Lv 10: broccoli bounces off too while the shield holds.
+  final bool shieldBlocksBroccoli;
 
   final ValueNotifier<int> hp = ValueNotifier(GameConstants.startHp);
   final ValueNotifier<int> coins = ValueNotifier(0);

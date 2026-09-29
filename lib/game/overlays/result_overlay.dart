@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app.dart';
@@ -170,13 +172,39 @@ class _CoinBreakdown extends StatelessWidget {
   }
 }
 
-class _Stars extends StatelessWidget {
+class _Stars extends StatefulWidget {
   const _Stars({required this.stars});
 
   final int stars;
 
   @override
+  State<_Stars> createState() => _StarsState();
+}
+
+class _StarsState extends State<_Stars> {
+  final _timers = <Timer>[];
+
+  @override
+  void initState() {
+    super.initState();
+    // A pop per earned star, timed with its scale-in below.
+    for (var i = 0; i < widget.stars; i++) {
+      final ms = (i * 0.25 * (350 + i * 250)).round() + 60;
+      _timers.add(Timer(Duration(milliseconds: ms), () => services.audio.play(Sfx.star)));
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final t in _timers) {
+      t.cancel();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final stars = widget.stars;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,

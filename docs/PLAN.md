@@ -37,7 +37,7 @@ Platform: **Android only** · Engine: **Flutter + Flame** · Orientation: **port
 |---|---|---|
 | Speed | Faster lane switching (agility): 0.22s → 0.12s at Lv 10. Run speed stays set by the level. | 150 |
 | Food | Meat HP +20 → +30 (+1 per level) | 200 |
-| Shield | Lv 1–4: blocks 1 hit per run · Lv 5–9: 2 hits · Lv 10: 3 hits | 250 |
+| Shield | +1 blocked hit at Lv 1, 3, 5, 7, 10 (5 at max). Lv 2, 4, 6, 8, 9: longer invincibility after a block (0.5s → 1.5s). Lv 10 also bounces broccoli while the shield holds. | 250 |
 
 - Home shows a red "!" on UPGRADES whenever something is affordable; a defeat screen offers UPGRADE when affordable.
 
@@ -99,5 +99,8 @@ test/  evolution_stage_test  boss_resolution_test  star_rating_test
 4. **Levels:** generator, 20 hand-tuned levels, chapters, Level Select.
 5. **Economy:** coins, upgrades on Home, balancing.
 6. **Polish:** audio, particles, and swapping in new art as it arrives.
+   - Audio: 16 SFX + a 32s music loop synthesised by `tools/generate_audio.py`; `AudioService` plays them through low-latency pools and respects the Sound/Music toggles. Drop-in CC0 list in `docs/AUDIO.md`.
+   - Roadside decor per chapter (acacias, palms, cacti, pines, bamboo, columns…) drawn in code from the chapter palette; speed lines, dust trail, pickup/hit particle bursts, lane-change swoosh, shield bubble.
+   - Launcher icon (legacy + adaptive) from `design/app_icon_1024.png` via `tools/make_launcher_icon.py`.
 
 The game is built so missing art never blocks it: every new asset has a stand-in until it arrives.
